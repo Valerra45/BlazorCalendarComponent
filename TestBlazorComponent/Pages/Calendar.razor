@@ -90,7 +90,7 @@
                                         @foreach (var item in @Weeks[weekIdx].Dates[dayIdx].DayEvents!)
                                         {
                                             <div draggable="true"
-                                                class=@(item.EventDate.Day < DateTime.Now.Day ? "tx-past-event" : "tx-event")
+                                                class=@(item.EventDate < DateTime.Now ? "tx-past-event" : "tx-event")
                                                 @ondrag="@(()=> StartDrag(item))"
                                                 @onclick="(() => OpenModalUpdate(item.Id))">
                                                 @(item.AllDay ? String.Format("-- {0}", item.Note)
