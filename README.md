@@ -1,1 +1,1 @@
-# Blazor component calendar
+# Blazor calendar component
