@@ -3,7 +3,7 @@
 @using TestBlazorComponent.Abstractions
 @using TestBlazorComponent.Domain
 
-@inject IRepository EventRepository
+@inject IEventRepository EventRepository
 
 <PageTitle>Calendar</PageTitle>
 
@@ -25,7 +25,7 @@
 
         Events!.Clear();
 
-        Events.AddRange(await EventRepository.GetWhereAsync(x => x.EventDate > firstDay && x.EventDate < lastDay));
+        Events.AddRange(await EventRepository.GetWhereAsync(x => x.EventDate >= firstDay && x.EventDate < lastDay));
     }
 
     private async Task CreateEventAsync(Event ev)

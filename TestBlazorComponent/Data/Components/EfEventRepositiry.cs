@@ -10,7 +10,7 @@ using TestBlazorComponent.Domain;
 
 namespace TestBlazorComponent.Data.Components
 {
-    public class EfEventRepositiry : IRepository
+    public class EfEventRepositiry : IEventRepository
     {
         private readonly EventDbContext _context;
 

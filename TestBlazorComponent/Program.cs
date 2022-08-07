@@ -14,7 +14,7 @@ builder.Services.AddDbContext<EventDbContext>(options =>
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 
-builder.Services.AddScoped<IRepository, EfEventRepositiry>();
+builder.Services.AddScoped<IEventRepository, EfEventRepositiry>();
 
 var app = builder.Build();
 

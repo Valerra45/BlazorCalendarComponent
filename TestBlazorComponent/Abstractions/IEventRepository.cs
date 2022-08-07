@@ -8,7 +8,7 @@ using TestBlazorComponent.Domain;
 
 namespace TestBlazorComponent.Abstractions
 {
-    public interface IRepository
+    public interface IEventRepository
     {
         Task<Event> GetByIdAsync(Guid id);
 
