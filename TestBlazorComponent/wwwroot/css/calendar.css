@@ -1,0 +1,57 @@
+﻿.table-bordered td {
+    border: 1px solid #dee2e6;
+}
+
+
+.tb th, .tb td {
+    overflow: auto;
+    width: 14%;
+}
+
+td.tx-weekend-now {
+    background-color: #cedad6;
+}
+
+.tx-weekend {
+    color: #0c7547;
+}
+
+.tx-weekend-now {
+    color: #0c7547;
+}
+
+td.tx-weekend {
+    background: #d5f9efff;
+}
+
+.tx-work {
+    color: black;
+}
+
+.tx-work-now {
+    color: black;
+}
+
+td.tx-work-now {
+    background-color: #cedad6;
+}
+
+.tx-another-day {
+    color: #acb5b4;
+}
+
+.tx-another-weekend {
+    color: #acb5b4;
+}
+
+td.tx-another-weekend {
+    background: #d5f9efff;
+}
+
+.tx-event {
+    color: black;
+}
+
+.tx-past-event {
+    color: #808080;
+}

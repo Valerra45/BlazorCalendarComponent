@@ -1,0 +1,54 @@
+﻿@page "/"
+
+@using TestBlazorComponent.Abstractions
+@using TestBlazorComponent.Domain
+
+@inject IRepository EventRepository
+
+<PageTitle>Calendar</PageTitle>
+
+<Calendar Events="@Events" 
+    CreateEventAsync="@CreateEventAsync"
+    UpdateEventAsync="@UpdateEventAsync"
+    DeleteEventAsync="@DeleteEventAsync"
+    GetEventsAsync="@GetEventAsync"
+    />
+
+@code {
+    public List<Event>? Events { get; set; } = new();
+
+    private async Task GetEventAsync(DateTime day)
+    {
+        var firstDay = new DateTime(day.Year, day.Month, 1);
+
+        var lastDay = firstDay.AddMonths(1);
+
+        Events!.Clear();
+
+        Events.AddRange(await EventRepository.GetWhereAsync(x => x.EventDate > firstDay && x.EventDate < lastDay));
+    }
+
+    private async Task CreateEventAsync(Event ev)
+    {
+        await EventRepository.AddAsync(ev);
+    }
+
+    private async Task UpdateEventAsync(Event ev)
+    {
+        var updateEvent = await EventRepository.GetByIdAsync(ev!.Id);
+
+        updateEvent.AllDay = ev.AllDay;
+        updateEvent.Note = ev.Note;
+        updateEvent.EventDate = ev.EventDate;
+        updateEvent.DayName = ev.DayName;
+
+        await EventRepository.UpdateAsync(updateEvent);
+    }
+
+    private async Task DeleteEventAsync(Guid id)
+    {
+        var deleteEvent = await EventRepository.GetByIdAsync(id);
+
+        await EventRepository.DeleteAsync(deleteEvent);
+    }
+}

@@ -1,0 +1,329 @@
+﻿@using System.Globalization
+@using TestBlazorComponent.Domain
+@using TestBlazorComponent.Models
+
+
+@if (DisplayModal)
+{
+    <div class="modal" tabindex="-1" role="dialog" style="display:block; top: 40%">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(EventModel!.Id == Guid.Empty ? "New" : "Edit") Event on @EventModel!.DayName</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @onclick="CloseModal"></button>
+                </div>
+                <EditForm Model="EventModel" OnValidSubmit="OnCreateOrUpdateEventAsync">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="eventTime" class="form-label">Event Time</label>
+                            <input type="time" class="form-control form-control-sm" id="eventTime" @bind="EventModel!.Time">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="eventNote" class="form-label">Event Note</label>
+                            <input type="text" class="form-control" id="eventNote" @bind="EventModel!.Note">
+                        </div>
+
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="flexCheckChecked" @bind="EventModel.AllDay">
+                            <label class="form-check-label" for="flexCheckChecked">
+                                All day
+                            </label>
+                        </div>
+                    </div>
+
+                    @if (EventModel.Id == Guid.Empty)
+                    {
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-outline-success">Create</button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="modal-footer">
+                            <button type="submit" class="btn btn-outline-info">Save changes</button>
+                            <button type="button" class="btn btn-outline-danger" @onclick="OnDeleteAsync">Delete</button>
+                        </div>
+                    }
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="container">
+    <div class="d-flex flex-row">
+        <div class="p-2" style="color: #0c7547;">@Months[CurentMonth - 1]</div>
+        <div class="p-2" @onclick="PrevMonth"><span>&lsaquo;</span></div>
+        <div class="p-2" @onclick="NextMonth"><span>&rsaquo;</span></div>
+        <div class="p-2">@Months[CurentMonth]</div>
+    </div>
+    <div class="table-responsive">
+        <table class="table" style="table-layout: fixed; word-break: break-all">
+            <thead class="bg-light-gray">
+                <tr>
+                    @foreach (var day in Days)
+                    {
+                        <th>@day</th>
+                    }
+                </tr>
+            </thead>
+            <tbody class="table-bordered tb">
+                @for (var weekIdx = 0; weekIdx < Weeks.Count; weekIdx++)
+                {
+                    <tr>
+                        @for (var dayIdx = 0; dayIdx < Weeks[weekIdx].Dates.Count; dayIdx++)
+                        {
+                            var dayName = Weeks[weekIdx].Dates[dayIdx].DayName;
+
+                            <td class=@(@Weeks[weekIdx].Dates[dayIdx].ThisMonth == CurentMonth ? (dayIdx > 4 ? (@Weeks[weekIdx].Dates[dayIdx].Now ? "tx-weekend-now" : "tx-weekend") 
+                                : (@Weeks[weekIdx].Dates[dayIdx].Now ? "tx-work-now" : "tx-work")) : (dayIdx > 4 ? "tx-another-weekend" : "tx-another-day"))>
+                                <div style="height: 120px; width:100%" @ondblclick="(() => OpenModalCreate(dayName!))">
+                                    <div style="height: 25px">
+                                        <span class=@(@Weeks[weekIdx].Dates[dayIdx].Now ? "badge bg-primary" : "")>
+                                            @Weeks[weekIdx].Dates[dayIdx].DateValue
+                                        </span>
+                                    </div>
+                                    <div class="d-flex flex-column" style="height: 95px;" 
+                                        ondragover="event.preventDefault();"@ondrop="@(()=> Drop(dayName!))">
+
+                                        @foreach (var item in @Weeks[weekIdx].Dates[dayIdx].DayEvents!)
+                                        {
+                                            <div draggable="true"
+                                                class=@(item.EventDate.Day < DateTime.Now.Day ? "tx-past-event" : "tx-event")
+                                                @ondrag="@(()=> StartDrag(item))"
+                                                @onclick="(() => OpenModalUpdate(item.Id))">
+                                                @(item.AllDay ? String.Format("-- {0}", item.Note)
+                                                    : String.Format("{0:t} {1}", item.EventDate, item.Note))
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+
+    [Parameter]
+    public EventCallback<Event> CreateEventAsync { get; set; }
+
+    [Parameter]
+    public EventCallback<Event> UpdateEventAsync { get; set; }
+
+    [Parameter]
+    public EventCallback<Guid> DeleteEventAsync { get; set; }
+
+    [Parameter]
+    public EventCallback<DateTime> GetEventsAsync { get; set; }
+
+    [Parameter]
+    public List<Event>? Events { get; set; }
+
+    public List<string> Days { get; set; } = new();
+
+    public List<Week> Weeks { get; set; } = new();
+
+    public List<string> Months { get; set; } = new();
+
+    public int CurentMonth { get; set; } = 0;
+
+    public bool DisplayModal { get; set; } = false;
+
+    public EventModel? EventModel { get; set; }
+
+    public Event? DragEvent { get; set; }
+
+    protected override void OnInitialized()
+    {
+        var culture = new CultureInfo("ru-RU", false);
+
+        Days = culture.DateTimeFormat.AbbreviatedDayNames.ToList();
+
+        Months = culture.DateTimeFormat.MonthNames.ToList();
+
+        CurentMonth = DateTime.Now.Month;
+
+        GnerateCalendar();
+    }
+
+    private async void GnerateCalendar()
+    {
+        var StartDate = (new DateTime(DateTime.Now.Year, CurentMonth, 1));
+
+        await GetEventsAsync.InvokeAsync(StartDate);
+
+        StartDate = StartDate.AddDays(1 - (int)StartDate.DayOfWeek);
+
+        var EndDate = StartDate.AddDays(42);
+
+        Weeks.Clear();
+
+        List<DayEvent> dates = new();
+
+        var countDays = 0;
+
+        for (var td = StartDate; td <= EndDate; td = td.AddDays(1))
+        {
+            countDays++;
+
+            dates.Add(new DayEvent
+                {
+                    DayName = td.ToString("dd-MMMM-yyyy"),
+                    DateValue = td.Day.ToString("d"),
+                    Now = td.ToString("dd-MMMM-yyyy").Equals(DateTime.Now.ToString("dd-MMMM-yyyy")),
+                    ThisMonth = td.Month,
+                    DayEvents = Events!.Where(x => x.DayName!.Equals(td.ToString("dd-MMMM-yyyy"))).ToList()
+                });
+
+            if (countDays % 7 == 0)
+            {
+                var week = new Week();
+
+                week.Dates = dates;
+
+                Weeks.Add(week);
+
+                dates = new();
+            }
+        }
+    }
+
+    private void NextMonth()
+    {
+        CurentMonth++;
+
+        GnerateCalendar();
+    }
+
+    private void PrevMonth()
+    {
+        CurentMonth--;
+
+        GnerateCalendar();
+    }
+
+    private void CloseModal()
+    {
+        DisplayModal = false;
+    }
+
+    private void OpenModalCreate(string dayName)
+    {
+        if (DateTime.Parse(dayName).Month != CurentMonth)
+        {
+            return;
+        }
+
+        DisplayModal = true;
+
+        EventModel = new EventModel
+            {
+                DayName = dayName
+            };
+    }
+
+    private void OpenModalUpdate(Guid id)
+    {
+        DisplayModal = true;
+
+        var ev = Events!.FirstOrDefault(x => x.Id == id);
+
+        EventModel = new EventModel
+            {
+                DayName = ev!.DayName,
+                Note = ev!.Note,
+                Time = ev!.EventDate,
+                AllDay = ev!.AllDay,
+                Id = ev!.Id,
+            };
+    }
+
+    private async Task OnCreateOrUpdateEventAsync()
+    {
+        if (EventModel!.Id == Guid.Empty)
+        {
+            await OnCreateEventAsync();
+        }
+        else
+        {
+            await OnUpdateEventAsync();
+        }
+
+    }
+
+    private async Task OnCreateEventAsync()
+    {
+        var day = DateTime.Parse(EventModel!.DayName!)
+            .AddHours(EventModel!.Time.Hour)
+            .AddMinutes(EventModel!.Time.Minute);
+
+        var ev = new Event
+        {
+            EventDate = day,
+            Note = EventModel.Note,
+            AllDay = EventModel.AllDay,
+            DayName = EventModel.DayName,
+        };
+
+        await CreateEventAsync.InvokeAsync(ev);
+
+        GnerateCalendar();
+
+        DisplayModal = false;
+    }
+
+    private async Task OnUpdateEventAsync()
+    {
+        var day = DateTime.Parse(EventModel!.DayName!)
+           .AddHours(EventModel!.Time.Hour)
+           .AddMinutes(EventModel!.Time.Minute);
+
+        var ev = Events!.FirstOrDefault(x => x.Id == EventModel!.Id);
+
+        ev!.AllDay = EventModel!.AllDay;
+        ev!.EventDate = day;
+        ev!.Note = EventModel.Note;
+
+        await UpdateEventAsync.InvokeAsync(ev);
+
+        GnerateCalendar();
+
+        DisplayModal = false;
+    }
+
+    private async Task OnDeleteAsync()
+    {
+        await DeleteEventAsync.InvokeAsync(EventModel!.Id);
+
+        GnerateCalendar();
+
+        DisplayModal = false;
+    }
+
+    private void StartDrag(Event ev)
+    {
+        DragEvent = ev;
+    }
+
+    private async void Drop(string dayName)
+    {
+        if (DateTime.Parse(dayName).Month != CurentMonth)
+        {
+            return;
+        }
+
+        DragEvent!.DayName = dayName;
+
+        await UpdateEventAsync.InvokeAsync(DragEvent);
+
+        GnerateCalendar();
+
+        DisplayModal = false;
+    }
+}
