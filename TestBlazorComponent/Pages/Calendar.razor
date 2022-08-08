@@ -53,7 +53,7 @@
 
 <div class="container">
     <div class="d-flex flex-row">
-        <div class="p-2" style="color: #0c7547;">@Months[CurentMonth - 1]</div>
+        <div class="p-2" style=@(DateTime.Now.Month == CurentMonth ? "color: #0c7547;" : "")>@Months[CurentMonth - 1]</div>
         <div class="p-2" @onclick="PrevMonth"><span>&lsaquo;</span></div>
         <div class="p-2" @onclick="NextMonth"><span>&rsaquo;</span></div>
         <div class="p-2">@Months[CurentMonth]</div>
@@ -319,6 +319,10 @@
         }
 
         DragEvent!.DayName = dayName;
+
+        DragEvent.EventDate = DateTime.Parse(dayName)
+           .AddHours(DragEvent!.EventDate.Hour)
+           .AddMinutes(DragEvent!.EventDate.Minute);
 
         await UpdateEventAsync.InvokeAsync(DragEvent);
 
