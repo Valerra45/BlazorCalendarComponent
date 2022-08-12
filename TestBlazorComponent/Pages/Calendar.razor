@@ -56,7 +56,7 @@
         <div class="p-2" style=@(DateTime.Now.Month == CurentMonth ? "color: #0c7547;" : "")>@Months[CurentMonth - 1]</div>
         <div class="p-2" @onclick="PrevMonth"><span>&lsaquo;</span></div>
         <div class="p-2" @onclick="NextMonth"><span>&rsaquo;</span></div>
-        <div class="p-2">@Months[CurentMonth]</div>
+        <div class="p-2" style=@(DateTime.Now.Month == CurentMonth + 1 ? "color: #0c7547;" : "")>@Months[CurentMonth]</div>
     </div>
     <div class="table-responsive">
         <table class="table" style="table-layout: fixed; word-break: break-all">
